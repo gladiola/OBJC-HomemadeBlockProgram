@@ -19,6 +19,12 @@
 //       that --expire-blocks can manage their lifetime.
 //       Reads /var/log/daemon.
 //
+//   pf-blocker --monitor-ddos
+//       Bring IPs already flagged by the DDoS detector
+//       (OpenBSDDDOSShield / DDOSShield) into the HBP ledger so that
+//       --expire-blocks can manage their lifetime.
+//       Reads /var/log/daemon.
+//
 //   pf-blocker --expire-blocks
 //       Remove blocks older than BLOCK_HOURS from the block file and ledger.
 //
@@ -28,6 +34,7 @@
 //   */5 * * * * /usr/local/sbin/pf-blocker --monitor-disconnect
 //   */5 * * * * /usr/local/sbin/pf-blocker --monitor-allowlist-violations
 //   */5 * * * * /usr/local/sbin/pf-blocker --monitor-slowloris-violations
+//   */5 * * * * /usr/local/sbin/pf-blocker --monitor-ddos
 //   0   * * * * /usr/local/sbin/pf-blocker --expire-blocks
 
 #import <Foundation/Foundation.h>
@@ -40,12 +47,14 @@ static void printUsage(const char *prog) {
     fprintf(stderr,
         "Usage: %s [--monitor-invalid-user | --monitor-disconnect |\n"
         "          --monitor-allowlist-violations |\n"
-        "          --monitor-slowloris-violations | --expire-blocks]\n"
+        "          --monitor-slowloris-violations |\n"
+        "          --monitor-ddos | --expire-blocks]\n"
         "\n"
         "  --monitor-invalid-user           Block IPs from sshd 'Invalid user' entries\n"
         "  --monitor-disconnect             Block IPs from sshd 'Received disconnect' entries\n"
         "  --monitor-allowlist-violations   Block IPs with 10+ CGI allowlist violations in 1h\n"
         "  --monitor-slowloris-violations   Add Slowloris-blocked IPs to the HBP ledger\n"
+        "  --monitor-ddos                   Add OpenBSDDDOSShield-detected IPs to the HBP ledger\n"
         "  --expire-blocks                  Remove blocks older than BLOCK_HOURS\n",
         prog);
 }
@@ -105,6 +114,18 @@ int main(int argc, const char *argv[]) {
                              pattern:@"SlowlorisMonitor.*Suspicious IP"];
             NSInteger n = [manager addBlocksForIPs:ips
                                          syslogTag:@"blocked Slowloris attacker"];
+            if (n > 0) {
+                [manager reloadPFTable];
+            }
+
+        } else if ([mode isEqualToString:@"--monitor-ddos"]) {
+            HBPViolationScanner *scanner =
+                [[HBPViolationScanner alloc] initWithConfiguration:config];
+            NSArray<NSString *> *ips =
+                [scanner scanLogFile:@"/var/log/daemon"
+                             pattern:@"DDOSShield.*detected from"];
+            NSInteger n = [manager addBlocksForIPs:ips
+                                         syslogTag:@"blocked DDoS attacker"];
             if (n > 0) {
                 [manager reloadPFTable];
             }

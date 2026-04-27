@@ -142,6 +142,13 @@ pf-blocker --monitor-slowloris-violations
     (one appearance within the window) is effectively "block on first detection";
     raise webViolationThreshold if you prefer to wait for repeated detections.
 
+pf-blocker --monitor-ddos
+    Bring IPs already flagged by the DDoS detector (OpenBSDDDOSShield /
+    DDOSShield) into the HBP ledger.  This lets --expire-blocks manage their
+    lifetime alongside SSH blocks.  Reads /var/log/daemon.
+    DDOSShield logs one line per detection event, so a threshold of 1 blocks
+    on first detection; raise webViolationThreshold to require repeated events.
+
 pf-blocker --expire-blocks
     Remove blocks older than BLOCK_HOURS from the block file and ledger.
 ```
@@ -154,6 +161,7 @@ pf-blocker: blocked SSH invalid-user attacker 198.51.100.42
 pf-blocker: blocked SSH disconnect attacker 198.51.100.43
 pf-blocker: blocked CGI allowlist violator 198.51.100.44
 pf-blocker: blocked Slowloris attacker 198.51.100.45
+pf-blocker: blocked DDoS attacker 198.51.100.46
 ```
 
 Each expired block is logged at `auth.info` priority:
@@ -176,6 +184,7 @@ for example every 5 minutes for blocking and every hour for expiry:
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-disconnect
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-allowlist-violations
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-slowloris-violations
+*/5 * * * * /usr/local/sbin/pf-blocker --monitor-ddos
 0   * * * * /usr/local/sbin/pf-blocker --expire-blocks
 ```
 
