@@ -38,10 +38,10 @@ attackers are centrally recorded.
 The program is written for OpenBSD with GNUstep.  No other packages are
 required at runtime — `pfctl` and `logger` are both part of the base system.
 
-Install the GNUstep build tools (one-time setup):
+Install the GNUstep runtime (one-time setup):
 
 ```sh
-pkg_add gnustep-make gnustep-base
+pkg_add gnustep-base
 ```
 
 ---
@@ -96,20 +96,24 @@ touch /etc/pf/blocks/blockLedger.txt
 
 ## Building
 
-```sh
-# Source the GNUstep environment (add this to your shell profile to make it
-# permanent).
-. /usr/local/share/GNUstep/Makefiles/GNUstep.sh
+Install GNUstep (one-time, if not already present):
 
+```sh
+pkg_add gnustep-base
+```
+
+Then build and install:
+
+```sh
 # Build
 make
 
-# Install to /usr/local/bin (requires root)
+# Install to /usr/local/sbin (requires root)
 sudo make install
-
-# Optional: also place it in /usr/local/sbin for the crontab examples below
-sudo ln -sf /usr/local/bin/pf-blocker /usr/local/sbin/pf-blocker
 ```
+
+The `Makefile` uses `gnustep-config` to obtain the correct compiler and linker
+flags automatically, so no environment sourcing is required.
 
 ---
 
