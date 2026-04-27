@@ -291,6 +291,37 @@ static void testViolationScannerMissingFile(void)
            ips.count == 0);
 }
 
+static void testViolationScannerDDOSShieldPattern(void)
+{
+    HBPConfiguration *config = [HBPConfiguration defaultConfiguration];
+    config.webViolationThreshold   = 1;
+    config.webViolationWindowHours = 24;
+    config.whitelistIP = @"";
+
+    NSString *ts = syslogTimestamp(5);
+
+    /* DDOSShield log format: "<ts> host DDOSShield[pid]: detected from <IP>" */
+    NSString *log = [NSString stringWithFormat:
+        @"%@ host DDOSShield[1234]: detected from 3.4.5.6\n"
+        @"%@ host DDOSShield[1234]: detected from 7.8.9.10\n"
+        @"%@ host otherd[1234]: unrelated 3.4.5.6 message\n",
+        ts, ts, ts];
+
+    NSString *path = writeTempFile(log);
+    HBPViolationScanner *scanner =
+        [[HBPViolationScanner alloc] initWithConfiguration:config];
+    NSArray *ips = [scanner scanLogFile:path pattern:@"DDOSShield.*detected from"];
+
+    ASSERT("ddos scanner: first attacker IP detected",
+           [ips containsObject:@"3.4.5.6"]);
+    ASSERT("ddos scanner: second attacker IP detected",
+           [ips containsObject:@"7.8.9.10"]);
+    ASSERT("ddos scanner: non-matching line excluded",
+           ips.count == 2);
+
+    deleteTempFile(path);
+}
+
 /* ── HBPBlockManager tests ─────────────────────────────────────────────── */
 
 /* Return a configuration whose block/ledger files are unique temp paths. */
@@ -475,6 +506,7 @@ int main(int argc, const char *argv[])
     testViolationScannerWhitelist();
     testViolationScannerNonMatchingLinesIgnored();
     testViolationScannerMissingFile();
+    testViolationScannerDDOSShieldPattern();
 
     testBlockManagerAddBlocks();
     testBlockManagerNoDuplicates();
