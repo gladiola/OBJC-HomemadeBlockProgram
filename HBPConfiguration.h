@@ -59,6 +59,17 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *whitelistIP;
 
 // ---------------------------------------------------------------------------
+// Web-violation scanning settings
+// ---------------------------------------------------------------------------
+
+/// Number of times an IP must appear in the web-violation log within
+/// webViolationWindowHours before it is blocked.
+@property (nonatomic, assign) NSInteger webViolationThreshold;
+
+/// Rolling window (in hours) used when counting web violations.
+@property (nonatomic, assign) NSInteger webViolationWindowHours;
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 

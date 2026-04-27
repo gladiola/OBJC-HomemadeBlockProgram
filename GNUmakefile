@@ -20,7 +20,8 @@ pf-blocker_OBJC_FILES = \
 	main.m \
 	HBPConfiguration.m \
 	HBPAuthLogScanner.m \
-	HBPBlockManager.m
+	HBPBlockManager.m \
+	HBPViolationScanner.m
 
 pf-blocker_OBJCFLAGS = -fobjc-arc
 
