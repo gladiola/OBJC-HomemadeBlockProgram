@@ -39,6 +39,12 @@
     // own management address).  Matching lines are skipped entirely.
     config.whitelistIP     = @"www.xxx.yyy.zzz";
 
+    // -----------------------------------------------------------------------
+    // Web-violation scanning
+    // -----------------------------------------------------------------------
+    config.webViolationThreshold   = 10;  // violations before blocking
+    config.webViolationWindowHours = 1;   // rolling window in hours
+
     return config;
 }
 

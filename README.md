@@ -28,6 +28,7 @@ attackers are centrally recorded.
 | `HBPConfiguration.h/m` | All tunable settings (paths, syslog host, block hours, …) |
 | `HBPAuthLogScanner.h/m` | Reads authlog and extracts unique attacker IPs |
 | `HBPBlockManager.h/m` | Manages the block file, ledger, expiry, and pf reload |
+| `HBPViolationScanner.h/m` | Timestamp-aware scanner for web-violation logs (allowlisting & Slowloris) |
 | `GNUmakefile` | GNUstep build file |
 
 ---
@@ -55,6 +56,11 @@ config.syslogHost  = @"your.syslog.host";  // hostname/IP of remote syslog serve
 config.syslogPort  = @"514";               // UDP port (514 is standard)
 config.blockHours  = 24;                   // how long a block stays in effect
 config.whitelistIP = @"192.0.2.1";         // YOUR management IP — never blocked
+
+// Web-violation scanning (used by --monitor-allowlist-violations and
+// --monitor-slowloris-violations):
+config.webViolationThreshold   = 10;   // violations before blocking
+config.webViolationWindowHours = 1;    // rolling window in hours
 ```
 
 > **⚠ Important — set `whitelistIP` before deploying.**  Replace the
@@ -116,6 +122,19 @@ pf-blocker --monitor-invalid-user
 pf-blocker --monitor-disconnect
     Block IPs seen in sshd "Received disconnect from" log entries.
 
+pf-blocker --monitor-allowlist-violations
+    Block IPs that have violated the CGI allowlist (OBJC-allowlisting /
+    request_validator) webViolationThreshold or more times within the past
+    webViolationWindowHours hours.  Reads /var/log/authlog.
+
+pf-blocker --monitor-slowloris-violations
+    Bring IPs already flagged by the Slowloris detector (OBJC-slowlorisdetector /
+    SlowlorisMonitor) into the HBP ledger.  This lets --expire-blocks manage
+    their lifetime alongside SSH blocks.  Reads /var/log/daemon.
+    Because SlowlorisMonitor logs one line per detection run, a threshold of 1
+    (one appearance within the window) is effectively "block on first detection";
+    raise webViolationThreshold if you prefer to wait for repeated detections.
+
 pf-blocker --expire-blocks
     Remove blocks older than BLOCK_HOURS from the block file and ledger.
 ```
@@ -126,6 +145,8 @@ Each newly blocked IP is logged to the configured remote syslog server at
 ```
 pf-blocker: blocked SSH invalid-user attacker 198.51.100.42
 pf-blocker: blocked SSH disconnect attacker 198.51.100.43
+pf-blocker: blocked CGI allowlist violator 198.51.100.44
+pf-blocker: blocked Slowloris attacker 198.51.100.45
 ```
 
 Each expired block is logged at `auth.info` priority:
@@ -146,6 +167,8 @@ for example every 5 minutes for blocking and every hour for expiry:
 ```
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-invalid-user
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-disconnect
+*/5 * * * * /usr/local/sbin/pf-blocker --monitor-allowlist-violations
+*/5 * * * * /usr/local/sbin/pf-blocker --monitor-slowloris-violations
 0   * * * * /usr/local/sbin/pf-blocker --expire-blocks
 ```
 
