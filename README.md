@@ -108,6 +108,9 @@ Then build and install:
 # Build
 make
 
+# Run the test suite (no root required)
+make test
+
 # Install to /usr/local/sbin (requires root)
 sudo make install
 ```
