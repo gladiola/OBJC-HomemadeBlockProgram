@@ -1,45 +1,30 @@
-## Language Index
+# OBJC-HomemadeBlockProgram — Yorùbá
 
-- [US English](docs/i18n/README.en-US.md)
-- [German / Deutsch](docs/i18n/README.de.md)
-- [Spanish / Español](docs/i18n/README.es.md)
-- [French / Français](docs/i18n/README.fr.md)
-- [Portuguese / Português](docs/i18n/README.pt.md)
-- [Italian / Italiano](docs/i18n/README.it.md)
-- [Hong Kong Chinese / 繁體中文（香港）](docs/i18n/README.zh-HK.md)
-- [Korean / 한국어](docs/i18n/README.ko.md)
-- [Hindi / हिन्दी](docs/i18n/README.hi.md)
-- [Russian / Русский](docs/i18n/README.ru.md)
-- [Arabic / العربية](docs/i18n/README.ar.md)
-- [Swahili / Kiswahili](docs/i18n/README.sw.md)
-- [Japanese / 日本語](docs/i18n/README.ja.md)
-- [Haitian Creole / Kreyòl Ayisyen](docs/i18n/README.ht.md)
-- [Hawaiian / ʻŌlelo Hawaiʻi](docs/i18n/README.haw.md)
-- [Samoan / Gagana Sāmoa](docs/i18n/README.sm.md)
-- [Maori / Te Reo Māori](docs/i18n/README.mi.md)
-- [Afrikaans](docs/i18n/README.af.md)
-- [Dutch / Nederlands](docs/i18n/README.nl.md)
-- [Hausa](docs/i18n/README.ha.md)
-- [Amharic / አማርኛ](docs/i18n/README.am.md)
-- [Yoruba / Yorùbá](docs/i18n/README.yo.md)
-- [Bengali / বাংলা](docs/i18n/README.bn.md)
-- [Mandarin Chinese / 简体中文](docs/i18n/README.zh-CN.md)
-- [Estonian / Eesti](docs/i18n/README.et.md)
-- [Finnish / Suomi](docs/i18n/README.fi.md)
-- [Swedish / Svenska](docs/i18n/README.sv.md)
-- [Norwegian / Norsk](docs/i18n/README.no.md)
-- [Ukrainian / Українська](docs/i18n/README.uk.md)
-- [Thai / ไทย](docs/i18n/README.th.md)
-- [Bahasa Indonesia](docs/i18n/README.id.md)
-- [Tagalog](docs/i18n/README.tl.md)
-- [Malay / Bahasa Melayu](docs/i18n/README.ms.md)
-- [Javanese / Basa Jawa](docs/i18n/README.jv.md)
-- [Greek / Ελληνικά](docs/i18n/README.el.md)
-- [Latin / Latina](docs/i18n/README.la.md)
-- [Hebrew / עברית](docs/i18n/README.he.md)
-- [Irish / Gaeilge](docs/i18n/README.ga.md)
+Eyi jẹ́ eto laini-àṣẹ Objective-C fún OpenBSD tí ó ń dènà IP àwọn olùkọlù láti inú log, tí ó sì ń parí ìdènà àtijọ́.
+
+Àwọn ìtọnisọna lílo tí a túmọ̀ wà ní isalẹ; README Gẹ̀ẹ́sì pipe wà fún ìbámu pípé.
+
+## Localized usage directions
+
+- `pf-blocker --monitor-invalid-user`  
+  Dènà IP tí a rí nínú ìforúkọsílẹ̀ sshd "Invalid user".
+- `pf-blocker --monitor-disconnect`  
+  Dènà IP tí a rí nínú ìforúkọsílẹ̀ sshd "Received disconnect from".
+- `pf-blocker --monitor-allowlist-violations`  
+  Dènà IP tí ó kọjá ààlà ìfojúsùn ìrúkọ allowlist nínú àkókò tí a ṣètò.
+- `pf-blocker --monitor-slowloris-violations`  
+  Gbé IP tí aṣàwárí Slowloris samisi wọ ledger blocker.
+- `pf-blocker --monitor-ddos`  
+  Gbé IP tí aṣàwárí DDoS samisi wọ ledger blocker.
+- `pf-blocker --expire-blocks`  
+  Yọ ìdènà àtijọ́ kúrò nínú fáìlì ìdènà àti ledger.
+
+## Full-parity English reference
+
+The full English README is included below for complete parity with the source document.
 
 ---
+
 # OBJC-HomemadeBlockProgram
 
 An Objective-C command-line program for OpenBSD that replaces the shell
