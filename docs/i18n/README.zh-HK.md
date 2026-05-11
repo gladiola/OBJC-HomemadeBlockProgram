@@ -1,82 +1,33 @@
-# OBJC-HomemadeBlockProgram — 繁體中文（香港）
-
-這是一個用於 OpenBSD 的 Objective-C 命令列程式，會從日誌封鎖攻擊者 IP，並清除過期封鎖。
-
-下方提供本地化使用說明；並附上完整英文 README 以保持完全對等。
-
-## Localized usage directions
-
-- `pf-blocker --monitor-invalid-user`  
-  封鎖在 sshd「Invalid user」日誌出現的 IP。
-- `pf-blocker --monitor-disconnect`  
-  封鎖在 sshd「Received disconnect from」日誌出現的 IP。
-- `pf-blocker --monitor-allowlist-violations`  
-  封鎖在設定時間窗內超過 Web allowlist 違規門檻的 IP。
-- `pf-blocker --monitor-slowloris-violations`  
-  把被 Slowloris 偵測器標記的 IP 匯入封鎖帳本。
-- `pf-blocker --monitor-ddos`  
-  把被 DDoS 偵測器標記的 IP 匯入封鎖帳本。
-- `pf-blocker --expire-blocks`  
-  從封鎖檔與帳本移除過期封鎖。
-
-## Full-parity English reference
-
-The full English README is included below for complete parity with the source document.
-
----
-
 # OBJC-HomemadeBlockProgram
 
-An Objective-C command-line program for OpenBSD that replaces the shell
-scripts in
-[gladiola/OpenBSDHomemadeBlockScripts](https://github.com/gladiola/OpenBSDHomemadeBlockScripts).
-It reads `/var/log/authlog`, extracts attacker IPs from SSH brute-force
-attempts, adds them to a pf block table for immediate blocking, and logs each
-event to a remote syslog server.  A separate mode expires blocks after a
-configurable number of hours.
+這是一個給 OpenBSD 使用的 Objective-C 指令列程式，用來取代 `OpenBSDHomemadeBlockScripts` 的 shell 腳本。它會讀取 `/var/log/authlog`，擷取 SSH 暴力破解來源 IP，加入 pf 封鎖表，並把事件送到遠端 syslog。
 
----
+## 目前情況
 
-## Situation
+當 `sshd` 開啟時，暴力登入會反覆出現。此程式會自動封鎖來源 IP，並集中記錄。
 
-`sshd` is enabled.  Log entries and HIDS show that SSH is repeatedly subjected
-to brute-force attacks.  This program responds automatically: extract the
-offending IP, append it to the pf block file and a ledger, reload the live pf
-table, and ship an `auth.warning` syslog message to a remote log server so
-attackers are centrally recorded.
+## 原始檔案
 
----
+| 檔案 | 用途 |
+|---|---|
+| `main.m` | CLI 入口與流程控制 |
+| `HBPConfiguration.h/m` | 可調整設定（路徑、syslog、封鎖時數） |
+| `HBPAuthLogScanner.h/m` | 讀取 authlog 並擷取唯一攻擊 IP |
+| `HBPBlockManager.h/m` | 管理封鎖檔、ledger、到期與 pf 重新載入 |
+| `HBPViolationScanner.h/m` | 具時間視窗的 Web 違規掃描 |
+| `GNUmakefile` | GNUstep 建置檔 |
 
-## Source files
+## 先決條件
 
-| File | Purpose |
-|------|---------|
-| `main.m` | CLI entry point — argument parsing and orchestration |
-| `HBPConfiguration.h/m` | All tunable settings (paths, syslog host, block hours, …) |
-| `HBPAuthLogScanner.h/m` | Reads authlog and extracts unique attacker IPs |
-| `HBPBlockManager.h/m` | Manages the block file, ledger, expiry, and pf reload |
-| `HBPViolationScanner.h/m` | Timestamp-aware scanner for web-violation logs (allowlisting & Slowloris) |
-| `GNUmakefile` | GNUstep build file |
-
----
-
-## Prerequisites
-
-The program is written for OpenBSD with GNUstep.  No other packages are
-required at runtime — `pfctl` and `logger` are both part of the base system.
-
-Install the GNUstep runtime (one-time setup):
+需要 OpenBSD 與 GNUstep。`pfctl`、`logger` 已在基礎系統內。
 
 ```sh
 pkg_add gnustep-base
 ```
 
----
+## 設定
 
-## Configuration
-
-Open `HBPConfiguration.m` and edit the values in `+defaultConfiguration`
-before building:
+建置前請在 `HBPConfiguration.m` 的 `+defaultConfiguration` 修改：
 
 ```objc
 config.syslogHost  = @"your.syslog.host";  // hostname/IP of remote syslog server
@@ -90,28 +41,18 @@ config.webViolationThreshold   = 10;   // violations before blocking
 config.webViolationWindowHours = 1;    // rolling window in hours
 ```
 
-> **⚠ Important — set `whitelistIP` before deploying.**  Replace the
-> placeholder `www.xxx.yyy.zzz` with your actual management or admin IP
-> address.  Any log line containing that address is skipped entirely, so you
-> cannot accidentally block yourself.  If you forget, the program will log a
-> warning each run but will proceed without any whitelist protection.
-
-The remaining paths (`blockFile`, `ledgerFile`, `pfTableName`, …) match the
-defaults used by the companion shell scripts and rarely need changing.
-
----
+> **重要：** 必須把 `whitelistIP` 設成你的管理 IP，避免誤封自己。
 
 ## pf.conf
 
-`/etc/pf.conf` must contain a table that reads from the block file.  Keep (or
-create) the same table the shell scripts used:
+`/etc/pf.conf` 需要包含讀取封鎖檔的表格：
 
 ```
 table <arbitraryblocks> persist file "/etc/pf/blocks/arbitraryBlocks.txt"
 block in quick from <arbitraryblocks>
 ```
 
-Create the required directories and files before running the program:
+先建立所需目錄與檔案：
 
 ```sh
 mkdir -p /etc/pf/blocks
@@ -119,17 +60,7 @@ touch /etc/pf/blocks/arbitraryBlocks.txt
 touch /etc/pf/blocks/blockLedger.txt
 ```
 
----
-
-## Building
-
-Install GNUstep (one-time, if not already present):
-
-```sh
-pkg_add gnustep-base
-```
-
-Then build and install:
+## 建置
 
 ```sh
 # Build
@@ -142,46 +73,20 @@ make test
 sudo make install
 ```
 
-The `Makefile` uses `gnustep-config` to obtain the correct compiler and linker
-flags automatically, so no environment sourcing is required.
+## 使用方式
 
----
-
-## Usage
+支援模式：
 
 ```
 pf-blocker --monitor-invalid-user
-    Block IPs seen in sshd "Invalid user" log entries.
-
 pf-blocker --monitor-disconnect
-    Block IPs seen in sshd "Received disconnect from" log entries.
-
 pf-blocker --monitor-allowlist-violations
-    Block IPs that have violated the CGI allowlist (OBJC-allowlisting /
-    request_validator) webViolationThreshold or more times within the past
-    webViolationWindowHours hours.  Reads /var/log/authlog.
-
 pf-blocker --monitor-slowloris-violations
-    Bring IPs already flagged by the Slowloris detector (OBJC-slowlorisdetector /
-    SlowlorisMonitor) into the HBP ledger.  This lets --expire-blocks manage
-    their lifetime alongside SSH blocks.  Reads /var/log/daemon.
-    Because SlowlorisMonitor logs one line per detection run, a threshold of 1
-    (one appearance within the window) is effectively "block on first detection";
-    raise webViolationThreshold if you prefer to wait for repeated detections.
-
 pf-blocker --monitor-ddos
-    Bring IPs already flagged by the DDoS detector (OpenBSDDDOSShield /
-    DDOSShield) into the HBP ledger.  This lets --expire-blocks manage their
-    lifetime alongside SSH blocks.  Reads /var/log/daemon.
-    DDOSShield logs one line per detection event, so a threshold of 1 blocks
-    on first detection; raise webViolationThreshold to require repeated events.
-
 pf-blocker --expire-blocks
-    Remove blocks older than BLOCK_HOURS from the block file and ledger.
 ```
 
-Each newly blocked IP is logged to the configured remote syslog server at
-`auth.warning` priority:
+新封鎖會以 `auth.warning` 記錄：
 
 ```
 pf-blocker: blocked SSH invalid-user attacker 198.51.100.42
@@ -191,20 +96,17 @@ pf-blocker: blocked Slowloris attacker 198.51.100.45
 pf-blocker: blocked DDoS attacker 198.51.100.46
 ```
 
-Each expired block is logged at `auth.info` priority:
+到期解除會以 `auth.info` 記錄：
 
 ```
 pf-blocker: expired block for 198.51.100.42 after 24h
 ```
 
-The program must be run as root (required for `pfctl`).
-
----
+必須以 root 執行（`pfctl` 需求）。
 
 ## Cronjob
 
-Add entries to root's crontab (`crontab -e`) to run the program periodically,
-for example every 5 minutes for blocking and every hour for expiry:
+`crontab -e` 範例：
 
 ```
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-invalid-user
@@ -215,24 +117,6 @@ for example every 5 minutes for blocking and every hour for expiry:
 0   * * * * /usr/local/sbin/pf-blocker --expire-blocks
 ```
 
----
+## 風險
 
-## Hazards
-
-This program is a direct translation of the original primitive shell scripts.
-It makes simple pattern-based decisions and is less than 300 lines of logic.
-Read and understand the source — especially `HBPConfiguration.m` — before
-deploying it.
-
-Replace `www.xxx.yyy.zzz` in `HBPConfiguration.m` with a trusted IP you
-never want to block (e.g. your own management address).  Any log line that
-contains that address is skipped entirely.
-
-Over time the block table grows proportionally to the attack rate and
-`blockHours`.  The `--expire-blocks` mode prunes old entries automatically, so
-manual intervention is only needed if you want to release a specific IP sooner
-than the configured expiry time.
-
-OpenBSD ships with `sshguard` available in packages and its own `pf` log
-analysis tools; this program is a lightweight alternative for environments
-where simplicity is preferred over sophistication.
+此工具刻意保持簡單、以規則比對為主。部署前請先閱讀原始碼，尤其 `HBPConfiguration.m`。`--expire-blocks` 會自動清除舊條目。

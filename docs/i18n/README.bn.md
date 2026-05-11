@@ -1,82 +1,33 @@
-# OBJC-HomemadeBlockProgram — বাংলা
-
-এটি OpenBSD-এর জন্য একটি Objective-C কমান্ড-লাইন প্রোগ্রাম, যা লগ থেকে আক্রমণকারীর IP ব্লক করে এবং পুরোনো ব্লক মেয়াদোত্তীর্ণ করে।
-
-লোকালাইজড ব্যবহারের নির্দেশনা নিচে দেওয়া আছে; পূর্ণ সামঞ্জস্যের জন্য সম্পূর্ণ ইংরেজি README অন্তর্ভুক্ত করা হয়েছে।
-
-## Localized usage directions
-
-- `pf-blocker --monitor-invalid-user`  
-  sshd "Invalid user" লগে দেখা IP ব্লক করুন।
-- `pf-blocker --monitor-disconnect`  
-  sshd "Received disconnect from" লগে দেখা IP ব্লক করুন।
-- `pf-blocker --monitor-allowlist-violations`  
-  নির্ধারিত উইন্ডোর মধ্যে allowlist লঙ্ঘনের সীমা অতিক্রম করা IP ব্লক করুন।
-- `pf-blocker --monitor-slowloris-violations`  
-  Slowloris ডিটেক্টরে চিহ্নিত IP ব্লকার লেজারে যুক্ত করুন।
-- `pf-blocker --monitor-ddos`  
-  DDoS ডিটেক্টরে চিহ্নিত IP ব্লকার লেজারে যুক্ত করুন।
-- `pf-blocker --expire-blocks`  
-  ব্লক ফাইল ও লেজার থেকে পুরোনো ব্লক সরান।
-
-## Full-parity English reference
-
-The full English README is included below for complete parity with the source document.
-
----
-
 # OBJC-HomemadeBlockProgram
 
-An Objective-C command-line program for OpenBSD that replaces the shell
-scripts in
-[gladiola/OpenBSDHomemadeBlockScripts](https://github.com/gladiola/OpenBSDHomemadeBlockScripts).
-It reads `/var/log/authlog`, extracts attacker IPs from SSH brute-force
-attempts, adds them to a pf block table for immediate blocking, and logs each
-event to a remote syslog server.  A separate mode expires blocks after a
-configurable number of hours.
+এটি OpenBSD-এর জন্য একটি Objective-C CLI প্রোগ্রাম, যা `OpenBSDHomemadeBlockScripts`-এর shell স্ক্রিপ্টের বিকল্প। এটি `/var/log/authlog` পড়ে SSH brute-force আক্রমণকারী IP শনাক্ত করে pf-এ ব্লক করে।
 
----
+## পরিস্থিতি
 
-## Situation
+`sshd` সক্রিয় থাকলে brute-force আক্রমণ বারবার ঘটে। প্রোগ্রামটি আক্রমণকারীর IP বের করে pf ব্লক তালিকায় যোগ করে এবং ঘটনাটি কেন্দ্রীয় লগে পাঠায়।
 
-`sshd` is enabled.  Log entries and HIDS show that SSH is repeatedly subjected
-to brute-force attacks.  This program responds automatically: extract the
-offending IP, append it to the pf block file and a ledger, reload the live pf
-table, and ship an `auth.warning` syslog message to a remote log server so
-attackers are centrally recorded.
+## সোর্স ফাইল
 
----
+| ফাইল | উদ্দেশ্য |
+|---|---|
+| `main.m` | CLI এন্ট্রি ও সমন্বয় |
+| `HBPConfiguration.h/m` | পরিবর্তনযোগ্য সেটিংস (পাথ, syslog, ব্লক সময়) |
+| `HBPAuthLogScanner.h/m` | authlog পড়ে অনন্য আক্রমণকারী IP বের করে |
+| `HBPBlockManager.h/m` | ব্লক ফাইল, লেজার, মেয়াদোত্তীর্ণ ও pf রিলোড পরিচালনা করে |
+| `HBPViolationScanner.h/m` | ওয়েব লঙ্ঘনের জন্য সময়-উইন্ডো স্ক্যানার |
+| `GNUmakefile` | GNUstep বিল্ড ফাইল |
 
-## Source files
+## পূর্বশর্ত
 
-| File | Purpose |
-|------|---------|
-| `main.m` | CLI entry point — argument parsing and orchestration |
-| `HBPConfiguration.h/m` | All tunable settings (paths, syslog host, block hours, …) |
-| `HBPAuthLogScanner.h/m` | Reads authlog and extracts unique attacker IPs |
-| `HBPBlockManager.h/m` | Manages the block file, ledger, expiry, and pf reload |
-| `HBPViolationScanner.h/m` | Timestamp-aware scanner for web-violation logs (allowlisting & Slowloris) |
-| `GNUmakefile` | GNUstep build file |
-
----
-
-## Prerequisites
-
-The program is written for OpenBSD with GNUstep.  No other packages are
-required at runtime — `pfctl` and `logger` are both part of the base system.
-
-Install the GNUstep runtime (one-time setup):
+OpenBSD + GNUstep প্রয়োজন। `pfctl` এবং `logger` বেস সিস্টেমেই আছে।
 
 ```sh
 pkg_add gnustep-base
 ```
 
----
+## কনফিগারেশন
 
-## Configuration
-
-Open `HBPConfiguration.m` and edit the values in `+defaultConfiguration`
-before building:
+বিল্ডের আগে `HBPConfiguration.m` (`+defaultConfiguration`) এ মানগুলো সম্পাদনা করুন:
 
 ```objc
 config.syslogHost  = @"your.syslog.host";  // hostname/IP of remote syslog server
@@ -90,28 +41,18 @@ config.webViolationThreshold   = 10;   // violations before blocking
 config.webViolationWindowHours = 1;    // rolling window in hours
 ```
 
-> **⚠ Important — set `whitelistIP` before deploying.**  Replace the
-> placeholder `www.xxx.yyy.zzz` with your actual management or admin IP
-> address.  Any log line containing that address is skipped entirely, so you
-> cannot accidentally block yourself.  If you forget, the program will log a
-> warning each run but will proceed without any whitelist protection.
-
-The remaining paths (`blockFile`, `ledgerFile`, `pfTableName`, …) match the
-defaults used by the companion shell scripts and rarely need changing.
-
----
+> ডিপ্লয়ের আগে `whitelistIP` আপনার বিশ্বস্ত অ্যাডমিন IP-তে সেট করুন।
 
 ## pf.conf
 
-`/etc/pf.conf` must contain a table that reads from the block file.  Keep (or
-create) the same table the shell scripts used:
+`/etc/pf.conf`-এ এই টেবিলটি থাকতে হবে:
 
 ```
 table <arbitraryblocks> persist file "/etc/pf/blocks/arbitraryBlocks.txt"
 block in quick from <arbitraryblocks>
 ```
 
-Create the required directories and files before running the program:
+প্রয়োজনীয় ডিরেক্টরি/ফাইল তৈরি করুন:
 
 ```sh
 mkdir -p /etc/pf/blocks
@@ -119,17 +60,7 @@ touch /etc/pf/blocks/arbitraryBlocks.txt
 touch /etc/pf/blocks/blockLedger.txt
 ```
 
----
-
-## Building
-
-Install GNUstep (one-time, if not already present):
-
-```sh
-pkg_add gnustep-base
-```
-
-Then build and install:
+## বিল্ড
 
 ```sh
 # Build
@@ -142,46 +73,18 @@ make test
 sudo make install
 ```
 
-The `Makefile` uses `gnustep-config` to obtain the correct compiler and linker
-flags automatically, so no environment sourcing is required.
-
----
-
-## Usage
+## ব্যবহার
 
 ```
 pf-blocker --monitor-invalid-user
-    Block IPs seen in sshd "Invalid user" log entries.
-
 pf-blocker --monitor-disconnect
-    Block IPs seen in sshd "Received disconnect from" log entries.
-
 pf-blocker --monitor-allowlist-violations
-    Block IPs that have violated the CGI allowlist (OBJC-allowlisting /
-    request_validator) webViolationThreshold or more times within the past
-    webViolationWindowHours hours.  Reads /var/log/authlog.
-
 pf-blocker --monitor-slowloris-violations
-    Bring IPs already flagged by the Slowloris detector (OBJC-slowlorisdetector /
-    SlowlorisMonitor) into the HBP ledger.  This lets --expire-blocks manage
-    their lifetime alongside SSH blocks.  Reads /var/log/daemon.
-    Because SlowlorisMonitor logs one line per detection run, a threshold of 1
-    (one appearance within the window) is effectively "block on first detection";
-    raise webViolationThreshold if you prefer to wait for repeated detections.
-
 pf-blocker --monitor-ddos
-    Bring IPs already flagged by the DDoS detector (OpenBSDDDOSShield /
-    DDOSShield) into the HBP ledger.  This lets --expire-blocks manage their
-    lifetime alongside SSH blocks.  Reads /var/log/daemon.
-    DDOSShield logs one line per detection event, so a threshold of 1 blocks
-    on first detection; raise webViolationThreshold to require repeated events.
-
 pf-blocker --expire-blocks
-    Remove blocks older than BLOCK_HOURS from the block file and ledger.
 ```
 
-Each newly blocked IP is logged to the configured remote syslog server at
-`auth.warning` priority:
+নতুন ব্লক `auth.warning`-এ লগ হয়:
 
 ```
 pf-blocker: blocked SSH invalid-user attacker 198.51.100.42
@@ -191,20 +94,17 @@ pf-blocker: blocked Slowloris attacker 198.51.100.45
 pf-blocker: blocked DDoS attacker 198.51.100.46
 ```
 
-Each expired block is logged at `auth.info` priority:
+মেয়াদোত্তীর্ণ ব্লক `auth.info`-এ লগ হয়:
 
 ```
 pf-blocker: expired block for 198.51.100.42 after 24h
 ```
 
-The program must be run as root (required for `pfctl`).
+root হিসেবে চালান (`pfctl`-এর জন্য প্রয়োজন)।
 
----
+## ক্রনজব
 
-## Cronjob
-
-Add entries to root's crontab (`crontab -e`) to run the program periodically,
-for example every 5 minutes for blocking and every hour for expiry:
+`crontab -e`-এর জন্য পর্যায়ক্রমিক এন্ট্রির উদাহরণ:
 
 ```
 */5 * * * * /usr/local/sbin/pf-blocker --monitor-invalid-user
@@ -215,24 +115,6 @@ for example every 5 minutes for blocking and every hour for expiry:
 0   * * * * /usr/local/sbin/pf-blocker --expire-blocks
 ```
 
----
+## ঝুঁকি
 
-## Hazards
-
-This program is a direct translation of the original primitive shell scripts.
-It makes simple pattern-based decisions and is less than 300 lines of logic.
-Read and understand the source — especially `HBPConfiguration.m` — before
-deploying it.
-
-Replace `www.xxx.yyy.zzz` in `HBPConfiguration.m` with a trusted IP you
-never want to block (e.g. your own management address).  Any log line that
-contains that address is skipped entirely.
-
-Over time the block table grows proportionally to the attack rate and
-`blockHours`.  The `--expire-blocks` mode prunes old entries automatically, so
-manual intervention is only needed if you want to release a specific IP sooner
-than the configured expiry time.
-
-OpenBSD ships with `sshguard` available in packages and its own `pf` log
-analysis tools; this program is a lightweight alternative for environments
-where simplicity is preferred over sophistication.
+এই টুলটি ইচ্ছাকৃতভাবে সহজ ও প্যাটার্ন-ভিত্তিক। প্রোডাকশনে ব্যবহারের আগে সোর্স কোড, বিশেষ করে `HBPConfiguration.m`, পর্যালোচনা করুন। `--expire-blocks` স্বয়ংক্রিয়ভাবে পুরনো এন্ট্রি ছাঁটাই করে।
