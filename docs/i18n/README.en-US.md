@@ -1,30 +1,3 @@
-# OBJC-HomemadeBlockProgram — US English
-
-An Objective-C command-line program for OpenBSD that blocks attacker IPs from logs and expires old blocks.
-
-Localized usage directions are provided below; the full English README is included for complete parity.
-
-## Localized usage directions
-
-- `pf-blocker --monitor-invalid-user`  
-  Block IPs seen in sshd "Invalid user" log entries.
-- `pf-blocker --monitor-disconnect`  
-  Block IPs seen in sshd "Received disconnect from" log entries.
-- `pf-blocker --monitor-allowlist-violations`  
-  Block IPs that exceed the web allowlist violation threshold within the configured window.
-- `pf-blocker --monitor-slowloris-violations`  
-  Import IPs flagged by the Slowloris detector into the blocker ledger.
-- `pf-blocker --monitor-ddos`  
-  Import IPs flagged by the DDoS detector into the blocker ledger.
-- `pf-blocker --expire-blocks`  
-  Remove old blocks from the block file and ledger.
-
-## Full-parity English reference
-
-The full English README is included below for complete parity with the source document.
-
----
-
 # OBJC-HomemadeBlockProgram
 
 An Objective-C command-line program for OpenBSD that replaces the shell
